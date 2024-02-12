@@ -12,13 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class Main {
 
-    public static final String STRING_PATTERN = "(\"\\d*\"(;|$))+";
+    public static final String STRING_PATTERN = "(?:\s*(?:\"([^\"]*)\"|([^,]+))\s*,?)+?";
     public static final String OUTPUT_TXT = "output.txt";
 
     public static void main(String[] args) {
@@ -84,6 +83,7 @@ public class Main {
     public static List<List<String>> groupLines(List<String> lines) {
         Map<String, Map<Integer, Integer>> valuesCharacteristics = new HashMap<>();
         List<List<String>> groupsList = new ArrayList<>();
+        Map<Integer, Integer> mergedGroups = new HashMap<>();
 
         for (String line : lines) {
             String[] words = line.split(";");
@@ -95,7 +95,8 @@ public class Main {
 
                 if (valuesCharacteristics.containsKey(words[i])
                         && valuesCharacteristics.get(words[i]).get(i) != null ) {
-                    groupNumbers.add(valuesCharacteristics.get(words[i]).get(i));
+                    int group = getGroup(valuesCharacteristics, mergedGroups, words, i);
+                    groupNumbers.add(group);
                 } else {
                     newValues.put(words[i], i);
                 }
@@ -103,6 +104,9 @@ public class Main {
 
             Integer currentLineGroup = getLineGroupNumber(groupsList, line, groupNumbers);
 
+            if (groupNumbers.size() > 1) {
+                groupNumbers.forEach(number -> mergedGroups.put(number, currentLineGroup));
+            }
             updateValueCharacteristics(valuesCharacteristics, newValues, currentLineGroup);
         }
 
@@ -112,6 +116,14 @@ public class Main {
                 .filter(x -> x.size() > 1)
                 .sorted((g1, g2) -> g2.size() - g1.size())
                 .collect(Collectors.toList());
+    }
+
+    private static int getGroup(Map<String, Map<Integer, Integer>> valuesCharacteristics, Map<Integer, Integer> mergedGroups, String[] words, int i) {
+        int group = valuesCharacteristics.get(words[i]).get(i);
+        while (mergedGroups.containsKey(group)) {
+            group = mergedGroups.get(group);
+        }
+        return group;
     }
 
     private static Integer getLineGroupNumber(List<List<String>> groupsList, String line, Set<Integer> groupNumbers) {
