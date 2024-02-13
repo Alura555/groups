@@ -39,7 +39,7 @@ public class Main {
             return;
         }
 
-        List<List<String>> groups = groupLines(new ArrayList<>(uniqueLines));
+        List<List<String>> groups = groupLines(uniqueLines);
 
 
         try {
@@ -80,25 +80,25 @@ public class Main {
         }
     }
 
-    public static List<List<String>> groupLines(List<String> lines) {
-        Map<String, Map<Integer, Integer>> valuesCharacteristics = new HashMap<>();
+    public static List<List<String>> groupLines(Set<String> lines) {
+        Map<Integer, Map<String, Integer>> valuesCharacteristics = new HashMap<>();
         List<List<String>> groupsList = new ArrayList<>();
         Map<Integer, Integer> mergedGroups = new HashMap<>();
 
         for (String line : lines) {
-            String[] words = line.split(";");
+            String[] values = line.split(";");
             Set<Integer> groupNumbers = new HashSet<>();
-            Map<String, Integer> newValues = new HashMap<>();
-            for (int i = 0; i < words.length; i++) {
-                if (words[i].isEmpty())
+            Map<Integer, String> newValues = new HashMap<>();
+            for (int i = 0; i < values.length; i++) {
+                if (values[i].isEmpty())
                     continue;
 
-                if (valuesCharacteristics.containsKey(words[i])
-                        && valuesCharacteristics.get(words[i]).get(i) != null ) {
-                    int group = getGroup(valuesCharacteristics, mergedGroups, words, i);
+                if (valuesCharacteristics.containsKey(i)
+                        && valuesCharacteristics.get(i).get(values[i]) != null ) {
+                    int group = getGroup(valuesCharacteristics, mergedGroups, values, i);
                     groupNumbers.add(group);
                 } else {
-                    newValues.put(words[i], i);
+                    newValues.put(i, values[i]);
                 }
             }
 
@@ -118,8 +118,8 @@ public class Main {
                 .collect(Collectors.toList());
     }
 
-    private static int getGroup(Map<String, Map<Integer, Integer>> valuesCharacteristics, Map<Integer, Integer> mergedGroups, String[] words, int i) {
-        int group = valuesCharacteristics.get(words[i]).get(i);
+    private static int getGroup(Map<Integer, Map<String, Integer>> valuesCharacteristics, Map<Integer, Integer> mergedGroups, String[] words, int i) {
+        int group = valuesCharacteristics.get(i).get(words[i]);
         while (mergedGroups.containsKey(group)) {
             group = mergedGroups.get(group);
         }
@@ -140,15 +140,14 @@ public class Main {
         return currentLineGroup;
     }
 
-    private static void updateValueCharacteristics(Map<String, Map<Integer, Integer>> valuesCharacteristics,
-                                                   Map<String, Integer> newValues,
+    private static void updateValueCharacteristics(Map<Integer, Map<String, Integer>> valuesCharacteristics,
+                                                   Map<Integer, String> newValues,
                                                    Integer currentGroupNumber) {
         newValues.keySet()
                 .forEach(value -> {
-                    Map<Integer, Integer> characteristics = valuesCharacteristics
-                            .computeIfAbsent(value, k -> new HashMap<>());
-                    characteristics.put(newValues.get(value), currentGroupNumber);
-                    valuesCharacteristics.put(value, characteristics);
+                    valuesCharacteristics
+                            .computeIfAbsent(value, k -> new HashMap<>())
+                            .put(newValues.get(value), currentGroupNumber);
                 });
     }
 
@@ -173,9 +172,8 @@ public class Main {
                                        Set<Integer> groupNumbers) {
         List<String> mergedGroup = new ArrayList<>();
         for (Integer group : groupNumbers) {
-            List<String> groupLines = groupsList.get(group);
+            List<String> groupLines = groupsList.set(group, null);
             mergedGroup.addAll(groupLines);
-            groupsList.set(group, null);
         }
         mergedGroup.add(line);
         groupsList.add(mergedGroup);
